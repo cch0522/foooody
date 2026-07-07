@@ -1,0 +1,943 @@
+
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>서울 맛집 매거진 (Seoul Gourmet)</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Pretendard', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+                        serif: ['Playfair Display', 'Georgia', 'Chosunilbo_myungjo', 'serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    
+    <!-- Babel CDN (Browser JSX Compiler) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Web Font (Pretendard & Playfair Display) -->
+    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: "Pretendard", sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-900 selection:bg-amber-100 selection:text-amber-900">
+    <div id="root"></div>
+
+    <!-- React App Implementation via Babel -->
+    <script type="text/babel">
+        const { useState, useMemo } = React;
+
+        // ==========================================
+        // LIGHTWEIGHT SVG ICON COMPONENTS
+        // ==========================================
+        const MapPin = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+            </svg>
+        );
+
+        const Search = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+            </svg>
+        );
+
+        const Bookmark = ({ className = "w-4 h-4", fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+            </svg>
+        );
+
+        const Star = ({ className = "w-4 h-4", fill = "none" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+        );
+
+        const Utensils = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/>
+                <path d="M7 2v20"/>
+                <path d="M21 15V2v0a5 5 0 0 0-5 5v8c0 1.1.9 2 2 2h3Zm0 0v7"/>
+            </svg>
+        );
+
+        const Clock = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+        );
+
+        const DollarSign = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        );
+
+        const Compass = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+            </svg>
+        );
+
+        const ChevronRight = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
+        );
+
+        const XIcon = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/>
+            </svg>
+        );
+
+        const ThumbsUp = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h3l3.15-4.57a2.12 2.12 0 0 1 3.85 1.45z"/>
+            </svg>
+        );
+
+        const BookOpen = ({ className = "w-4 h-4" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+        );
+
+        // ==========================================
+        // MOCK DATA (서울 권역 및 구별 매거진풍 맛집 데이터)
+        // ==========================================
+        const REGIONS = {
+          EAST: {
+            name: "동부 권역 (East)",
+            description: "트렌디한 카페 거리와 오랜 전통의 노포가 공존하는 감성 미식의 성지",
+            gus: ["성동구", "광진구", "동대문구", "중랑구", "강동구"]
+          },
+          WEST: {
+            name: "서부 권역 (West)",
+            description: "젊음의 열정과 낭만, 글로벌한 이색 퀴진이 가득한 트렌드 리더들의 거리",
+            gus: ["마포구", "서대문구", "은평구", "강서구", "양천구", "영등포구"]
+          },
+          SOUTH: {
+            name: "남부 권역 (South)",
+            description: "모던하고 정갈한 파인 다이닝부터 트렌디한 핫플레이스까지 품격 높은 미식",
+            gus: ["강남구", "서초구", "송파구", "관악구", "동작구", "금천구"]
+          },
+          NORTH: {
+            name: "북부/도심 권역 (North)",
+            description: "깊은 역사의 숨결을 담은 전통 한식과 고풍스러운 한옥 속 현대적 미식의 조화",
+            gus: ["종로구", "중구", "용산구", "성북구", "강북구", "도봉구", "노원구"]
+          }
+        };
+
+        const RESTAURANTS = [
+          // --- 동부 권역 (EAST) ---
+          {
+            id: 1,
+            name: "쵸리상경",
+            region: "EAST",
+            gu: "성동구",
+            category: "한식 / 솥밥",
+            rating: 4.8,
+            editorPick: true,
+            priceRange: "15,000원 - 25,000원",
+            hours: "11:00 - 22:00 (Break 15:00-17:00)",
+            address: "서울 성동구 서울숲4길 18-8 2층",
+            summary: "정성스레 지어낸 솥밥 위에 올려진 바다와 육지의 진미. 갓 지은 밥의 고소함이 온몸을 채운다.",
+            description: "성수동 서울숲 골목길에 위치한 쵸리상경은 정갈하게 대접받는 한 끼의 정석을 보여줍니다. 부드러운 스테이크가 가득 올라간 '갈비 솥밥'과 신선한 전복의 내장 소스로 고소함을 극대화한 '전복문어 솥밥'이 대표적입니다. 뚜껑을 열었을 때 피어오르는 따뜻한 김과 윤기 흐르는 쌀밥은 시각과 후각을 동시에 매료시킵니다.",
+            image: "https://images.unsplash.com/photo-1608897013039-887f21d8c804?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["갈비 솥밥 (25,000원)", "전복문어 솥밥 (20,000원)", "표고멘보샤 (14,000원)"],
+            editorNote: "웨이팅이 필수인 곳이지만, 한 입 베어 무는 순간 기다림의 지루함은 온데간데없이 사라집니다. 부모님을 모시고 가기에도 더할 나위 없는 최고의 정성 가득한 공간입니다.",
+            tags: ["솥밥", "서울숲맛집", "성수동핫플", "정갈한한식", "웨이팅맛집"]
+          },
+          {
+            id: 2,
+            name: "소문난 성수 감자탕",
+            region: "EAST",
+            gu: "성동구",
+            category: "한식 / 감자탕",
+            rating: 4.6,
+            editorPick: false,
+            priceRange: "10,000원 - 40,000원",
+            hours: "24시간 영업 (연중무휴)",
+            address: "서울 성동구 연무장길 45",
+            summary: "백종원의 3대천왕이 극찬한 24시간 잠들지 않는 성수의 전설적인 감자탕.",
+            description: "수많은 미디어와 성수동 로컬들이 첫손에 꼽는 압도적 깊이감의 뼈해장국집입니다. 잡내 없이 부드럽게 발라지는 푸짐한 살코기와 감칠맛 가득하면서도 텁텁하지 않고 깔끔하게 떨어지는 국물이 특징입니다. 특제 마늘 겨자 소스에 고기를 찍어 먹으면 환상적인 조화를 이룹니다.",
+            image: "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["감자국 일반 (10,000원)", "감자탕 소 (29,000원)", "볶음밥 (3,000원)"],
+            editorNote: "성수역 인근에서 술잔을 기울이기에도, 해장을 하기에도 이보다 완벽한 성지는 없습니다. 새벽에 방문하면 비교적 여유롭게 이 깊은 풍미를 즐길 수 있습니다.",
+            tags: ["감자탕", "24시간맛집", "노포감성", "성수역맛집", "든든한한끼"]
+          },
+          {
+            id: 3,
+            name: "동해해물",
+            region: "EAST",
+            gu: "광진구",
+            category: "해산물 / 요리",
+            rating: 4.7,
+            editorPick: true,
+            priceRange: "30,000원 - 70,000원",
+            hours: "11:30 - 22:00 (일요일 휴무)",
+            address: "서울 광진구 동일로26길 16",
+            summary: "건대 먹자골목 이면에 숨겨진, 동해 바다의 파도 소리가 들릴 듯한 신선한 해산물의 보고.",
+            description: "외관은 평범한 골목 식당이지만, 문을 열고 들어서면 백반기행에 소개될 만큼 깊은 내공을 품은 해산물 전문점입니다. 가자미조림, 참골뱅이, 섭국 등 동해안 산지에서 직접 공수해오는 자연산 해산물만을 취급하여 입안 가득 바다의 향을 전해줍니다. 조미료 맛이 나지 않고 깔끔하며 원재료 고유의 단맛과 시원함이 살아있습니다.",
+            image: "https://images.unsplash.com/photo-1534080564583-6be75777b70a?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["가자미조림 (35,000원)", "자연산 섭국 (15,000원)", "참골뱅이 숙회 (40,000원)"],
+            editorNote: "자극적이지 않으면서도 자꾸만 손이 가는 이모님의 손맛은 서울 시내 최고라 자부합니다. 칼칼하면서도 구수한 섭국은 한 번 맛보면 계절마다 생각날 것입니다.",
+            tags: ["해산물맛집", "수요미식회", "건대노포", "자연산섭국", "가족식사"]
+          },
+
+          // --- 서부 권역 (WEST) ---
+          {
+            id: 4,
+            name: "이석덕 생면파스타",
+            region: "WEST",
+            gu: "서대문구",
+            category: "이탈리안 / 파스타",
+            rating: 4.5,
+            editorPick: false,
+            priceRange: "5,000원 - 15,000원",
+            hours: "11:00 - 21:30 (Break 15:00-17:00)",
+            address: "서울 서대문구 명물길 16 2층",
+            summary: "신촌 대학가에서 만나는 기적적인 가성비. 매일 아침 직접 뽑아내는 쫄깃한 이탈리아 정통 생면의 향연.",
+            description: "생면 파스타는 비싸다는 편견을 완벽하게 깨부순 곳입니다. 이탈리아산 듀럼밀 세몰리나를 사용해 매장에서 직접 자가제면하는 파스타를 단돈 몇 천 원 대부터 제공합니다. 아란치니, 라자냐, 생면 파스타 등 모든 메뉴가 저렴하지만 퀄리티만큼은 정통 이탈리안 비스트로 못지않습니다. 면발의 쫄깃함과 소스의 농도가 완벽합니다.",
+            image: "https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["신선한 토마토 생면파스타 (4,900원)", "보르고 로제 파스타 (8,900원)", "아란치니 (3,900원)"],
+            editorNote: "가격표를 보고 의심할 필요가 없습니다. 입안 가득 찰지게 감기는 생면의 매력은 건조 스파게티 면과는 차원이 다릅니다. 가벼운 지갑으로 최고의 호사를 느껴보세요.",
+            tags: ["생면파스타", "신촌맛집", "대학가명물", "갓성비", "자가제면"]
+          },
+          {
+            id: 5,
+            name: "연남토마",
+            region: "WEST",
+            gu: "마포구",
+            category: "일식 / 퓨전",
+            rating: 4.7,
+            editorPick: true,
+            priceRange: "12,000원 - 22,000원",
+            hours: "11:30 - 21:30",
+            address: "서울 마포구 월드컵북로6길 61",
+            summary: "감성적인 주택 개조 공간에서 맛보는 트렌디하고 정갈한 일식 퓨전 가정식.",
+            description: "연남동의 조용한 골목길에 자리 잡은 연남토마는 덮밥과 파스타를 현대적으로 재해석하여 젊은 미식가들의 마음을 빼앗았습니다. 두툼한 돈카츠 위에 특제 소스와 달걀을 부드럽게 풀어 올린 가츠동, 바질과 명란의 독특한 조합을 완성한 파스타 등이 대표 메뉴입니다. 깔끔하고 우디한 인테리어가 주는 분위기 역시 일품입니다.",
+            image: "https://images.unsplash.com/photo-1580822184713-fc5400e7fe10?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["믹스덮밥 (14,000원)", "명란 바질오일 파스타 (16,000원)", "소고기치즈카츠 (16,000원)"],
+            editorNote: "비주얼만 예쁜 인스타용 맛집이 아닙니다. 식재료 각각의 간이 훌륭하고 익힘 정도가 정확합니다. 연인과 함께하는 데이트 코스로 1순위 추천하는 곳.",
+            tags: ["연남동맛집", "퓨전일식", "인스타감성", "데이트코스", "돈카츠맛집"]
+          },
+
+          // --- 남부 권역 (SOUTH) ---
+          {
+            id: 6,
+            name: "금돼지식당",
+            region: "SOUTH",
+            gu: "강남구",
+            category: "그릴 / 돼지고기",
+            rating: 4.9,
+            editorPick: true,
+            priceRange: "18,000원 - 30,000원",
+            hours: "11:30 - 23:00",
+            address: "서울 중구 다산로 149", 
+            summary: "미쉐린 가이드 빕구르망이 인정한, 방탄소년단(BTS)도 줄 서서 먹는 대한민국 돼지고기 구이의 정점.",
+            description: "듀록 프리미엄 돼지만을 고집하여 어디서도 경험하지 못한 극한의 고소함과 쫄깃함을 선사합니다. 특허받은 청결 연탄을 사용하여 은은한 불향을 입히고, 두툼하게 썰어 나온 '본삼겹'과 아삭한 식감의 '등목살'은 고기 애호가들의 성지 순례 코스가 되었습니다. 전문 그릴러들이 가장 완벽한 굽기로 구워줍니다.",
+            image: "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["본삼겹 (19,000원)", "등목살 (19,000원)", "통돼지 김치찌개 (8,000원)"],
+            editorNote: "갈비뼈가 붙어있는 삼겹 부위인 본삼겹은 육즙의 고소함이 일반 삼겹살과는 차원을 달리합니다. 오랜 대기가 아깝지 않은 절대적인 맛의 성역입니다.",
+            tags: ["미쉐린가이드", "삼겹살맛집", "인생고기", "연탄구이", "인생맛집"]
+          },
+          {
+            id: 7,
+            name: "쟠블랑제리",
+            region: "SOUTH",
+            gu: "관악구",
+            category: "베이커리 / 디저트",
+            rating: 4.8,
+            editorPick: true,
+            priceRange: "3,000원 - 15,000원",
+            hours: "07:00 - 22:00",
+            address: "서울 관악구 낙성대역길 8",
+            summary: "들어는 보았나? 묵직한 무게감부터 남다른 단팥빵과 생크림 단팥빵의 명가.",
+            description: "낙성대역의 랜드마크이자 서울 5대 빵집 중 하나로 불리는 곳입니다. 시그니처인 단팥빵은 얇고 쫄깃한 반죽 속에 알알이 살아있는 팥소와 호두가 터질 듯이 가득 차 있어, 들었을 때 묵직함이 느껴질 정도입니다. 터질 듯 가득 차 흐르는 생크림 단팥빵과 밤이 통째로 쏟아지는 밤식빵도 강력 추천합니다.",
+            image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["단팥빵 (2,400원)", "생크림단팥빵 (3,300원)", "맘모스빵 (7,000원)"],
+            editorNote: "이곳의 맘모스빵은 나오는 시간마다 오픈런이 펼쳐집니다. 재료를 아끼지 않는다는 철학이 무엇인지 온몸으로 느낄 수 있는 투박하지만 진실된 빵집입니다.",
+            tags: ["서울5대빵집", "단팥빵명가", "맘모스빵", "빵지순례", "낙성대핫플"]
+          },
+
+          // --- 북부/도심 권역 (NORTH) ---
+          {
+            id: 8,
+            name: "명동교자 본점",
+            region: "NORTH",
+            gu: "중구",
+            category: "한식 / 칼국수",
+            rating: 4.9,
+            editorPick: true,
+            priceRange: "10,000원 - 12,000원",
+            hours: "10:30 - 21:00",
+            address: "서울 중구 명동10길 29",
+            summary: "1966년 창업 이래 명동을 지켜온 진한 닭 육수 칼국수와 중독적인 마늘김치의 정석.",
+            description: "명동교자는 서울을 방문하는 국내외 모든 관광객들과 미식가들의 필수 관문입니다. 오랜 시간 푹 고아낸 진하고 깊은 닭 육수에 부드러운 평양식 만두와 다진 고기 고명이 올라간 칼국수는 깊은 감칠맛을 자랑합니다. 특히 알싸하고 매콤한 마늘 향이 폭발하는 김치는 칼국수의 완벽한 동반자입니다.",
+            image: "https://images.unsplash.com/photo-1617093727343-374698b1b08d?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["칼국수 (11,000원)", "만두 (12,000원)", "비빔국수 (11,000원)"],
+            editorNote: "칼국수 면발은 부드럽게 후루룩 넘어가고, 만두피는 입안에서 사르르 녹아내립니다. 인당 1국수 주문 시 면과 밥, 사리가 무한 리필된다는 넉넉한 인심도 매력적입니다.",
+            tags: ["미쉐린가이드", "인생칼국수", "마늘김치", "명동맛집", "50년전통"]
+          },
+          {
+            id: 9,
+            name: "우래옥",
+            region: "NORTH",
+            gu: "중구",
+            category: "한식 / 평양냉면",
+            rating: 4.9,
+            editorPick: true,
+            priceRange: "16,000원 - 40,000원",
+            hours: "11:20 - 21:00 (월요일 휴무)",
+            address: "서울 중구 창경궁로 62-29",
+            summary: "평양냉면의 명가 중에서도 가장 묵직하고 육향 가득한 육수로 왕좌를 지키는 곳.",
+            description: "1946년 개업해 70년이 넘는 세월 동안 서울식 평양냉면의 절대 강자로 군림해 온 우래옥입니다. 동치미 국물을 섞지 않고 오직 순수한 소고기 육수만을 사용하여 깊고 묵직한 육향과 진한 육수 맛을 냅니다. 메밀 향이 은은하게 퍼지는 툭툭 끊어지는 메밀 면발과의 조화는 한 번 빠지면 헤어 나올 수 없습니다.",
+            image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["평양냉면 (16,000원)", "온면 (16,000원)", "전통 불고기 (37,000원)"],
+            editorNote: "평양냉면 초심자들에게도 이곳의 육향 가득한 국물은 거부감 없이 와닿을 것입니다. 냉면 한 그릇에 담긴 한국 근현대사의 미식 헤리티지를 꼭 경험해보시길.",
+            tags: ["평양냉면", "수요미식회", "을지로맛집", "전통노포", "미쉐린가이드"]
+          },
+          {
+            id: 10,
+            name: "어니언 안국",
+            region: "NORTH",
+            gu: "종로구",
+            category: "카페 / 베이커리",
+            rating: 4.6,
+            editorPick: false,
+            priceRange: "5,000원 - 10,000원",
+            hours: "09:00 - 22:00",
+            address: "서울 종로구 계동길 5",
+            summary: "웅장한 전통 한옥 공간에서 즐기는 감각적인 베이커리와 스페셜티 커피.",
+            description: "초현대적 감성과 조선 시대 한옥의 기품이 가장 아름답게 충돌하는 복합 공간입니다. 안국동 한옥의 서까래 아래 좌식 마루에 앉아 먹는 달콤하고 폭신한 '팡도르'와 바삭한 페이스트리는 동서양의 이색적인 만남을 선사합니다. 계절의 변화를 고스란히 투영하는 마당의 풍경을 바라보며 마시는 커피 한 잔은 오감을 치유해 줍니다.",
+            image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=1000",
+            signatureMenu: ["팡도르 (6,000원)", "아메리카노 (5,000원)", "공주밤빵 (6,500원)"],
+            editorNote: "안국역 바로 앞에 위치해 접근성도 뛰어납니다. 외국인 친구가 한국에 온다면 한옥의 멋과 최고급 베이커리 맛을 동시에 보여주기 위해 가장 먼저 데려갈 곳입니다.",
+            tags: ["한옥카페", "팡도르", "삼청동카페", "인생샷명소", "어니언안국"]
+          }
+        ];
+
+        function App() {
+          const [selectedRegionKey, setSelectedRegionKey] = useState("NORTH");
+          const [selectedGu, setSelectedGu] = useState("전체");
+          const [searchQuery, setSearchQuery] = useState("");
+          const [activeTab, setActiveTab] = useState("magazine");
+          const [bookmarks, setBookmarks] = useState([]);
+          const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+          const [likeCounts, setLikeCounts] = useState({});
+
+          const handleRegionChange = (regionKey) => {
+            setSelectedRegionKey(regionKey);
+            setSelectedGu("전체");
+          };
+
+          const toggleBookmark = (id, e) => {
+            if (e) e.stopPropagation();
+            setBookmarks(prev => {
+              if (prev.includes(id)) {
+                return prev.filter(bId => bId !== id);
+              } else {
+                return [...prev, id];
+              }
+            });
+          };
+
+          const toggleLike = (id, e) => {
+            if (e) e.stopPropagation();
+            setLikeCounts(prev => ({
+              ...prev,
+              [id]: (prev[id] || 0) + 1
+            }));
+          };
+
+          const filteredRestaurants = useMemo(() => {
+            return RESTAURANTS.filter(res => {
+              const matchesSearch = 
+                res.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                res.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                res.gu.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                res.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                res.summary.toLowerCase().includes(searchQuery.toLowerCase());
+
+              if (activeTab === 'bookmarks') {
+                return bookmarks.includes(res.id) && matchesSearch;
+              }
+
+              const matchesRegion = res.region === selectedRegionKey;
+              const matchesGu = selectedGu === "전체" || res.gu === selectedGu;
+
+              return matchesRegion && matchesGu && matchesSearch;
+            });
+          }, [selectedRegionKey, selectedGu, searchQuery, activeTab, bookmarks]);
+
+          const featuredRestaurant = useMemo(() => {
+            const regionPicks = RESTAURANTS.filter(res => res.region === selectedRegionKey && res.editorPick);
+            return regionPicks.length > 0 ? regionPicks[0] : RESTAURANTS.filter(res => res.region === selectedRegionKey)[0];
+          }, [selectedRegionKey]);
+
+          return (
+            <div className="min-h-screen bg-stone-50 text-stone-900">
+              
+              {/* ================= HEADER & HERO ================= */}
+              <header className="border-b border-stone-200 bg-white sticky top-0 z-40">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex justify-between items-center h-20">
+                    <div className="flex flex-col cursor-pointer" onClick={() => { setActiveTab('magazine'); handleRegionChange('NORTH'); }}>
+                      <span className="font-serif text-2xl font-bold tracking-widest text-stone-900">
+                        SEOUL GOURMET
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.25em] text-stone-500 font-medium -mt-1">
+                        The Food Critic's Journal
+                      </span>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="hidden md:flex items-center flex-1 max-w-md mx-8 relative">
+                      <input
+                        type="text"
+                        placeholder="맛집 이름, 자치구, 메뉴, 태그 검색..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-stone-50 border border-stone-200 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-all text-stone-800"
+                      />
+                      <span className="absolute left-3.5 text-stone-400">
+                        <Search className="w-4 h-4" />
+                      </span>
+                      {searchQuery && (
+                        <button onClick={() => setSearchQuery("")} className="absolute right-3 p-1 rounded-full hover:bg-stone-200">
+                          <XIcon className="w-3 h-3 text-stone-500" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Nav Tabs */}
+                    <div className="flex items-center space-x-6">
+                      <button 
+                        onClick={() => setActiveTab('magazine')}
+                        className={`text-sm font-medium tracking-wide transition-colors ${activeTab === 'magazine' ? 'text-amber-600 font-bold border-b-2 border-amber-600 pb-1' : 'text-stone-600 hover:text-stone-900'}`}
+                      >
+                        매거진 아카이브
+                      </button>
+                      <button 
+                        onClick={() => setActiveTab('bookmarks')}
+                        className={`flex items-center space-x-1.5 text-sm font-medium tracking-wide transition-colors ${activeTab === 'bookmarks' ? 'text-amber-600 font-bold border-b-2 border-amber-600 pb-1' : 'text-stone-600 hover:text-stone-900'}`}
+                      >
+                        <Bookmark className="w-4 h-4 fill-current text-amber-600" />
+                        <span>스크랩북 ({bookmarks.length})</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </header>
+
+              {/* ================= HERO INTRO ================= */}
+              <div className="bg-white border-b border-stone-200 py-6 md:py-10 px-4">
+                <div className="max-w-4xl mx-auto text-center space-y-4">
+                  <span className="px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold tracking-wider uppercase rounded-full border border-amber-100">
+                    2026 Special Edition
+                  </span>
+                  <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 leading-tight">
+                    서울의 식탁, 깊이를 더하다
+                  </h1>
+                  <p className="text-sm sm:text-base text-stone-600 max-w-2xl mx-auto leading-relaxed font-serif italic">
+                    "가장 빛나는 성수동의 골목부터 대를 이어온 피맛골의 오래된 노포까지, 맛의 진정성을 찾아 떠나는 에디터들의 서울 맛집 아카이브."
+                  </p>
+
+                  <div className="md:hidden max-w-md mx-auto pt-3 relative">
+                    <input
+                      type="text"
+                      placeholder="음식점, 구, 메뉴 검색..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full bg-stone-50 border border-stone-200 rounded-lg py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 transition-all text-stone-800"
+                    />
+                    <span className="absolute left-3.5 top-6 text-stone-400">
+                      <Search className="w-4 h-4" />
+                    </span>
+                    {searchQuery && (
+                      <button onClick={() => setSearchQuery("")} className="absolute right-3 top-5 p-1 rounded-full hover:bg-stone-200">
+                        <XIcon className="w-3 h-3 text-stone-500" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ================= MAIN CONTENT ================= */}
+              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                
+                {activeTab === 'magazine' ? (
+                  <>
+                    {/* Region Selector */}
+                    <div className="mb-8">
+                      <h2 className="text-xs font-bold tracking-[0.2em] text-stone-500 uppercase mb-4 text-center sm:text-left">
+                        REGION SELECTOR
+                      </h2>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-4">
+                        {Object.entries(REGIONS).map(([key, value]) => {
+                          const isActive = selectedRegionKey === key;
+                          return (
+                            <button
+                              key={key}
+                              onClick={() => handleRegionChange(key)}
+                              className={`relative overflow-hidden p-4 rounded-xl text-left border transition-all duration-300 transform ${
+                                isActive 
+                                  ? 'border-stone-900 bg-stone-900 text-white shadow-lg translate-y-[-2px]' 
+                                  : 'border-stone-200 bg-white hover:border-stone-400 hover:bg-stone-50 text-stone-700'
+                              }`}
+                            >
+                              <span className={`block mb-2.5 ${isActive ? 'text-amber-400' : 'text-stone-400'}`}>
+                                <Compass className="w-5 h-5" />
+                              </span>
+                              <div className="font-serif text-base font-bold tracking-tight">
+                                {value.name.split(" ")[0]}
+                              </div>
+                              <div className={`text-[10px] tracking-wide mt-0.5 ${isActive ? 'text-stone-300' : 'text-stone-400'}`}>
+                                {value.name.split(" ")[1]}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Gu Chips */}
+                    <div className="bg-stone-100/80 rounded-2xl p-5 mb-10 border border-stone-200">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div>
+                          <h3 className="font-serif text-xl font-bold text-stone-900">
+                            {REGIONS[selectedRegionKey].name}
+                          </h3>
+                          <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                            {REGIONS[selectedRegionKey].description}
+                          </p>
+                        </div>
+                        <div className="text-xs font-medium text-stone-500 whitespace-nowrap">
+                          선택한 구: <span className="text-amber-700 font-bold">{selectedGu}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200/60">
+                        <button
+                          onClick={() => setSelectedGu("전체")}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            selectedGu === "전체"
+                              ? "bg-amber-600 text-white shadow-sm"
+                              : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200"
+                          }`}
+                        >
+                          전체보기
+                        </button>
+                        {REGIONS[selectedRegionKey].gus.map((guName) => (
+                          <button
+                            key={guName}
+                            onClick={() => setSelectedGu(guName)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                              selectedGu === guName
+                                ? "bg-amber-600 text-white shadow-sm"
+                                : "bg-white text-stone-700 hover:bg-stone-50 border border-stone-200"
+                            }`}
+                          >
+                            {guName}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Spotlight (Cover Story) */}
+                    {!searchQuery && selectedGu === "전체" && featuredRestaurant && (
+                      <div className="mb-14">
+                        <h2 className="text-xs font-bold tracking-[0.2em] text-stone-500 uppercase mb-4">
+                          EDITOR'S SPECIAL COVER
+                        </h2>
+                        <div 
+                          onClick={() => setSelectedRestaurant(featuredRestaurant)}
+                          className="group relative bg-white border border-stone-200 rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-500 cursor-pointer grid grid-cols-1 lg:grid-cols-12"
+                        >
+                          <div className="lg:col-span-7 h-64 sm:h-96 lg:h-auto overflow-hidden relative">
+                            <img 
+                              src={featuredRestaurant.image} 
+                              alt={featuredRestaurant.name}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-stone-900/60 to-transparent"></div>
+                            <div className="absolute top-4 left-4">
+                              <span className="px-3.5 py-1.5 bg-amber-500 text-stone-950 font-bold text-xs uppercase tracking-widest rounded-md shadow-md">
+                                COVER STORY
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="lg:col-span-5 p-6 sm:p-10 flex flex-col justify-between bg-stone-900 text-white">
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs uppercase tracking-widest text-amber-400 font-bold flex items-center gap-1">
+                                  <MapPin className="w-3.5 h-3.5" />
+                                  {featuredRestaurant.gu} / {featuredRestaurant.category}
+                                </span>
+                                <div className="flex items-center space-x-1">
+                                  <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                                  <span className="text-sm font-bold">{featuredRestaurant.rating}</span>
+                                </div>
+                              </div>
+
+                              <h3 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white group-hover:text-amber-300 transition-colors">
+                                {featuredRestaurant.name}
+                              </h3>
+
+                              <p className="text-stone-300 text-sm sm:text-base leading-relaxed font-serif italic border-l-2 border-amber-500 pl-4 py-1">
+                                "{featuredRestaurant.summary}"
+                              </p>
+
+                              <p className="text-stone-400 text-xs sm:text-sm leading-relaxed line-clamp-4">
+                                {featuredRestaurant.description}
+                              </p>
+                            </div>
+
+                            <div className="pt-6 border-t border-stone-800 mt-6 flex justify-between items-center">
+                              <div className="flex items-center space-x-1 text-xs text-stone-400">
+                                <Clock className="w-4.5 h-4.5 text-amber-400" />
+                                <span>{featuredRestaurant.hours.split(" ")[0]} OPEN</span>
+                              </div>
+                              <button 
+                                onClick={(e) => toggleBookmark(featuredRestaurant.id, e)}
+                                className="p-2.5 rounded-full bg-stone-800 text-stone-300 hover:text-white hover:bg-stone-700 transition-colors"
+                              >
+                                <Bookmark className="w-5 h-5" fill={bookmarks.includes(featuredRestaurant.id) ? "#f59e0b" : "none"} />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="mb-8 text-center sm:text-left">
+                    <h2 className="font-serif text-2xl font-bold text-stone-900 flex items-center justify-center sm:justify-start gap-2">
+                      <Bookmark className="w-6 h-6 text-amber-600" fill="#d97706" />
+                      나의 스크랩북 아카이브
+                    </h2>
+                    <p className="text-stone-500 text-sm mt-1">내가 가고 싶어서 찜해둔 소중한 서울 맛집들</p>
+                  </div>
+                )}
+
+                {/* Grid List */}
+                <div className="mb-6 flex justify-between items-center border-b border-stone-200 pb-3">
+                  <h2 className="text-xs font-bold tracking-[0.2em] text-stone-500 uppercase">
+                    {activeTab === 'magazine' ? 'COLLECTION ARCHIVES' : `SAVED ITEMS (${filteredRestaurants.length})`}
+                  </h2>
+                  <span className="text-xs text-stone-500">
+                    총 <span className="font-bold text-stone-900">{filteredRestaurants.length}</span>개의 미식 탐색됨
+                  </span>
+                </div>
+
+                {filteredRestaurants.length === 0 ? (
+                  <div className="bg-white rounded-2xl border border-stone-200 p-16 text-center max-w-xl mx-auto my-10 space-y-4">
+                    <Utensils className="w-12 h-12 text-stone-300 mx-auto" />
+                    <h3 className="font-serif text-lg font-bold text-stone-800">해당하는 미식 콘텐츠가 없습니다.</h3>
+                    <p className="text-stone-500 text-sm leading-relaxed">
+                      다른 자치구를 선택하시거나, 검색어 조건을 변경해보세요.
+                    </p>
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery("")}
+                        className="px-4 py-2 bg-stone-900 text-white rounded-lg text-xs font-semibold hover:bg-stone-800 transition-colors"
+                      >
+                        검색 조건 초기화
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {filteredRestaurants.map((res) => (
+                      <article 
+                        key={res.id}
+                        onClick={() => setSelectedRestaurant(res)}
+                        className="group bg-white rounded-2xl overflow-hidden border border-stone-200 hover:border-stone-400 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col h-full"
+                      >
+                        <div className="h-56 relative overflow-hidden bg-stone-100">
+                          <img 
+                            src={res.image} 
+                            alt={res.name} 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-stone-950/40 via-transparent to-transparent"></div>
+                          <span className="absolute bottom-4 left-4 px-2.5 py-1 bg-white/95 backdrop-blur-sm text-stone-900 text-[11px] font-bold tracking-wider uppercase rounded">
+                            {res.category}
+                          </span>
+                          <button 
+                            onClick={(e) => toggleBookmark(res.id, e)}
+                            className="absolute top-4 right-4 p-2 rounded-full bg-white/95 backdrop-blur-sm text-stone-600 hover:text-amber-600 shadow-md transition-colors"
+                          >
+                            <Bookmark className="w-4 h-4" fill={bookmarks.includes(res.id) ? "#f59e0b" : "none"} />
+                          </button>
+                          {res.editorPick && (
+                            <span className="absolute top-4 left-4 bg-amber-500 text-stone-950 font-bold text-[10px] px-2 py-1 rounded tracking-widest shadow">
+                              EDITOR'S PICK
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-6 flex flex-col justify-between flex-grow space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center text-xs text-stone-400">
+                              <span className="flex items-center gap-1 font-semibold text-stone-500">
+                                <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                                {res.gu}
+                              </span>
+                              <div className="flex items-center space-x-1">
+                                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                <span className="font-bold text-stone-700">{res.rating}</span>
+                              </div>
+                            </div>
+
+                            <h3 className="font-serif text-xl font-bold text-stone-900 group-hover:text-amber-600 transition-colors">
+                              {res.name}
+                            </h3>
+
+                            <p className="text-stone-600 text-sm leading-relaxed line-clamp-2 italic font-serif">
+                              "{res.summary}"
+                            </p>
+                          </div>
+
+                          <div className="space-y-3 pt-4 border-t border-stone-100">
+                            <div className="flex flex-wrap gap-1">
+                              {res.tags.slice(0, 3).map((tag, i) => (
+                                <span key={i} className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded">
+                                  #{tag}
+                                </span>
+                              ))}
+                            </div>
+
+                            <div className="flex justify-between items-center text-xs text-stone-400">
+                              <span className="flex items-center gap-1">
+                                <DollarSign className="w-3.5 h-3.5 text-stone-400" />
+                                {res.priceRange.split(" ")[0]}~
+                              </span>
+                              <span className="text-stone-900 font-bold flex items-center gap-0.5 group-hover:translate-x-1 transition-transform">
+                                자세히 읽기 <ChevronRight className="w-4 h-4" />
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </main>
+
+              {/* ================= MODAL DETAIL ================= */}
+              {selectedRestaurant && (
+                <div className="fixed inset-0 z-50 bg-stone-950/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+                  <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl overflow-hidden border border-stone-200 max-h-[90vh] flex flex-col">
+                    <div className="flex justify-between items-center px-6 py-4 border-b border-stone-100 bg-stone-50">
+                      <span className="font-serif text-xs font-bold tracking-[0.2em] text-stone-500 uppercase">
+                        SEOUL GOURMET ESSENTIALS
+                      </span>
+                      <button 
+                        onClick={() => setSelectedRestaurant(null)}
+                        className="p-1.5 rounded-full hover:bg-stone-200 text-stone-600 transition-colors"
+                      >
+                        <XIcon className="w-6 h-6" />
+                      </button>
+                    </div>
+
+                    <div className="overflow-y-auto flex-1">
+                      <div className="h-64 sm:h-80 relative bg-stone-100">
+                        <img 
+                          src={selectedRestaurant.image} 
+                          alt={selectedRestaurant.name} 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-stone-950/30 to-transparent"></div>
+                        <div className="absolute bottom-6 left-6 right-6 text-white space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <span className="px-2.5 py-0.5 bg-amber-500 text-stone-950 font-bold text-[10px] tracking-wider uppercase rounded">
+                              {selectedRestaurant.category}
+                            </span>
+                            <span className="text-xs font-semibold text-stone-200">
+                              {selectedRestaurant.gu} 아카이브
+                            </span>
+                          </div>
+                          <h2 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight">
+                            {selectedRestaurant.name}
+                          </h2>
+                        </div>
+                      </div>
+
+                      <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-8">
+                        <div className="md:col-span-7 space-y-6">
+                          <div>
+                            <h3 className="text-xs font-bold tracking-[0.15em] text-stone-400 uppercase mb-2">
+                              THE STORY
+                            </h3>
+                            <p className="font-serif text-lg text-amber-800 italic leading-relaxed border-l-4 border-amber-600 pl-4 mb-4">
+                              "{selectedRestaurant.summary}"
+                            </p>
+                            <p className="text-stone-700 text-sm sm:text-base leading-relaxed whitespace-pre-line font-light">
+                              {selectedRestaurant.description}
+                            </p>
+                          </div>
+
+                          <div className="bg-stone-50 rounded-2xl p-5 border border-stone-200">
+                            <h4 className="font-serif text-sm font-bold text-stone-800 mb-3 flex items-center gap-1.5">
+                              <Utensils className="w-4 h-4 text-amber-600" />
+                              에디터 강력 추천 메뉴
+                            </h4>
+                            <ul className="space-y-2.5">
+                              {selectedRestaurant.signatureMenu.map((menu, idx) => (
+                                <li key={idx} className="flex justify-between items-center text-xs sm:text-sm border-b border-stone-200/50 pb-1.5 last:border-0 last:pb-0">
+                                  <span className="font-medium text-stone-800 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                                    {menu.split(" (")[0]}
+                                  </span>
+                                  <span className="font-mono text-amber-700 font-bold">
+                                    {menu.includes("(") ? menu.split(" (")[1].replace(")", "") : ""}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+
+                          <div className="bg-amber-50/50 border border-amber-200/60 rounded-2xl p-5">
+                            <h4 className="font-serif text-sm font-bold text-amber-900 mb-2 flex items-center gap-1.5">
+                              <BookOpen className="w-4 h-4 text-amber-700" />
+                              에디터의 한 줄 평 (Editor's Note)
+                            </h4>
+                            <p className="text-stone-700 text-xs sm:text-sm leading-relaxed italic">
+                              {selectedRestaurant.editorNote}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="md:col-span-5 space-y-6">
+                          <div className="bg-stone-50 rounded-2xl p-5 border border-stone-200 space-y-4">
+                            <h3 className="text-xs font-bold tracking-[0.15em] text-stone-400 uppercase">
+                              ESSENTIAL INFO
+                            </h3>
+
+                            <div className="space-y-3.5 text-xs sm:text-sm">
+                              <div className="flex items-start gap-3">
+                                <span className="text-amber-500 shrink-0 mt-0.5"><Star className="w-5 h-5 fill-amber-500" /></span>
+                                <div>
+                                  <div className="font-bold text-stone-800">에디터 평점</div>
+                                  <div className="text-stone-500 mt-0.5">{selectedRestaurant.rating} / 5.0 (추천 지수 상위 2%)</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <span className="text-stone-500 shrink-0 mt-0.5"><MapPin className="w-5 h-5" /></span>
+                                <div>
+                                  <div className="font-bold text-stone-800">찾아가는 길</div>
+                                  <div className="text-stone-500 mt-0.5">{selectedRestaurant.address}</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <span className="text-stone-500 shrink-0 mt-0.5"><Clock className="w-5 h-5" /></span>
+                                <div>
+                                  <div className="font-bold text-stone-800">영업 시간</div>
+                                  <div className="text-stone-500 mt-0.5">{selectedRestaurant.hours}</div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-start gap-3">
+                                <span className="text-stone-500 shrink-0 mt-0.5"><DollarSign className="w-5 h-5" /></span>
+                                <div>
+                                  <div className="font-bold text-stone-800">예산 가이드</div>
+                                  <div className="text-stone-500 mt-0.5">{selectedRestaurant.priceRange}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <button 
+                              onClick={(e) => toggleBookmark(selectedRestaurant.id, e)}
+                              className={`flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-sm font-semibold border transition-all ${
+                                bookmarks.includes(selectedRestaurant.id)
+                                  ? "bg-amber-600 text-white border-amber-600"
+                                  : "bg-white text-stone-700 hover:bg-stone-50 border-stone-200"
+                              }`}
+                            >
+                              <Bookmark className="w-4 h-4" fill={bookmarks.includes(selectedRestaurant.id) ? "white" : "none"} />
+                              <span>{bookmarks.includes(selectedRestaurant.id) ? "스크랩됨" : "스크랩하기"}</span>
+                            </button>
+                            <button 
+                              onClick={(e) => toggleLike(selectedRestaurant.id, e)}
+                              className="flex items-center justify-center space-x-2 py-3 px-4 rounded-xl text-sm font-semibold bg-stone-900 text-white hover:bg-stone-800 border border-stone-900 transition-all"
+                            >
+                              <ThumbsUp className="w-4 h-4" />
+                              <span>추천 ({likeCounts[selectedRestaurant.id] || 0})</span>
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1.5 pt-2">
+                            {selectedRestaurant.tags.map((tag, idx) => (
+                              <span key={idx} className="text-xs text-stone-600 bg-stone-100 border border-stone-200/60 px-3 py-1 rounded-full">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="px-6 py-4 border-t border-stone-100 bg-stone-50 flex justify-end">
+                      <button 
+                        onClick={() => setSelectedRestaurant(null)}
+                        className="px-5 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-colors"
+                      >
+                        매거진 닫기
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ================= FOOTER ================= */}
+              <footer className="border-t border-stone-200 bg-white mt-20 py-12">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+                  <div className="font-serif text-lg font-bold tracking-widest text-stone-900">
+                    SEOUL GOURMET JOURNAL
+                  </div>
+                  <p className="text-stone-500 text-xs max-w-md mx-auto leading-relaxed">
+                    본 콘텐츠는 에디터들이 직접 답사하고 시식한 고품격 서울 가이드입니다. 2026 트렌드와 미식을 기준으로 주기적으로 갱신됩니다.
+                  </p>
+                  <div className="text-stone-400 text-[10px] uppercase tracking-wider">
+                    © 2026 SEOUL GOURMET JOURNAL. ALL RIGHTS RESERVED.
+                  </div>
+                </div>
+              </footer>
+
+            </div>
+          );
+        }
+
+        // Mount React
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
